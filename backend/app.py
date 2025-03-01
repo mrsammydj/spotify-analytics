@@ -1,4 +1,4 @@
-from flask import Flask
+from flask import Flask, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS
 from config import Config
@@ -24,6 +24,19 @@ def create_app(config_class=Config):
     app.register_blueprint(auth_bp, url_prefix='/api/auth')
     app.register_blueprint(user_bp, url_prefix='/api/user')
     app.register_blueprint(stats_bp, url_prefix='/api/stats')
+    
+    # Create a root route for testing
+    @app.route('/')
+    def index():
+        return jsonify({
+            "message": "Welcome to Spotify Analytics API",
+            "status": "online",
+            "endpoints": {
+                "auth": "/api/auth",
+                "user": "/api/user",
+                "stats": "/api/stats"
+            }
+        })
     
     # Create database tables
     with app.app_context():
