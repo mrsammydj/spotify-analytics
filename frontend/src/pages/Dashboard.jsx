@@ -3,14 +3,20 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import api from '../services/api';
 import Navbar from '../components/Navbar';
+import InfoTooltip from '../components/InfoTooltip';
 
 const Dashboard = () => {
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
   const [recentlyPlayed, setRecentlyPlayed] = useState([]);
   const [topArtists, setTopArtists] = useState([]);
   const [topTracks, setTopTracks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+
+  // Popularity description text
+  const trackPopularityText = "Track popularity is a value between 0 and 100, with 100 being the most popular. The popularity is calculated based on the total number of recent plays and how recent those plays are. Newer plays count more than older ones.";
+  
+  const artistPopularityText = "Artist popularity is a value between 0 and 100, with 100 being the most popular. The popularity is calculated based on the popularity of the artist's tracks, their number of followers, and other metrics Spotify uses. Popularity values are updated periodically to reflect current trends.";
 
   useEffect(() => {
     const fetchDashboardData = async () => {
@@ -120,7 +126,9 @@ const Dashboard = () => {
           {/* Top Artists Section */}
           <div className="bg-gray-800 p-6 rounded-lg shadow-lg">
             <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-bold">Top Artists</h2>
+              <div className="flex items-center">
+                <h2 className="text-xl font-bold">Top Artists</h2>
+              </div>
               <Link to="/top-items" className="text-green-500 hover:text-green-400 text-sm">
                 View All
               </Link>
@@ -137,13 +145,17 @@ const Dashboard = () => {
                         className="w-full h-full object-cover rounded-full"
                       />
                     </div>
-                    <div className="ml-3">
-                      <p className="font-medium">{artist.name}</p>
-                      <p className="text-sm text-gray-400">
+                    <div className="ml-3 flex-grow overflow-hidden">
+                      <p className="font-medium truncate">{artist.name}</p>
+                      <p className="text-sm text-gray-400 truncate">
                         {artist.genres && artist.genres.length > 0 
                           ? artist.genres.slice(0, 2).join(', ') 
                           : 'No genres available'}
                       </p>
+                    </div>
+                    <div className="ml-2 text-xs px-2 py-1 bg-gray-700 rounded text-gray-300 flex items-center whitespace-nowrap">
+                      {artist.popularity}
+                      <InfoTooltip text={artistPopularityText} />
                     </div>
                   </div>
                 ))
@@ -156,7 +168,9 @@ const Dashboard = () => {
           {/* Top Tracks Section */}
           <div className="bg-gray-800 p-6 rounded-lg shadow-lg">
             <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-bold">Top Tracks</h2>
+              <div className="flex items-center">
+                <h2 className="text-xl font-bold">Top Tracks</h2>
+              </div>
               <Link to="/top-items" className="text-green-500 hover:text-green-400 text-sm">
                 View All
               </Link>
@@ -173,11 +187,15 @@ const Dashboard = () => {
                         className="w-full h-full object-cover rounded"
                       />
                     </div>
-                    <div className="ml-3 overflow-hidden">
+                    <div className="ml-3 flex-grow overflow-hidden">
                       <p className="truncate font-medium">{track.name}</p>
                       <p className="text-sm text-gray-400 truncate">
                         {track.artists.map(artist => artist.name).join(', ')}
                       </p>
+                    </div>
+                    <div className="ml-2 text-xs px-2 py-1 bg-gray-700 rounded text-gray-300 flex items-center whitespace-nowrap">
+                      {track.popularity}
+                      <InfoTooltip text={trackPopularityText} />
                     </div>
                   </div>
                 ))

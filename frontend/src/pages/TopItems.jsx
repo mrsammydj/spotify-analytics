@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import Navbar from '../components/Navbar';
+import InfoTooltip from '../components/InfoTooltip';
 import api from '../services/api';
 
 const TopItems = () => {
@@ -41,6 +42,11 @@ const TopItems = () => {
     fetchTopItems();
   }, [activeTab, timeRange]);
 
+  // Popularity description text
+  const trackPopularityText = "Track popularity is a value between 0 and 100, with 100 being the most popular. The popularity is calculated based on the total number of recent plays and how recent those plays are. Newer plays count more than older ones.";
+  
+  const artistPopularityText = "Artist popularity is a value between 0 and 100, with 100 being the most popular. The popularity is calculated based on the popularity of the artist's tracks, their number of followers, and other metrics Spotify uses. Popularity values are updated periodically to reflect current trends.";
+
   // Render track item
   const renderTrack = (track, index) => (
     <div key={track.id} className="bg-gray-800 p-4 rounded-lg shadow flex items-center">
@@ -63,8 +69,9 @@ const TopItems = () => {
       </div>
       
       <div className="text-right">
-        <div className="text-xs px-2 py-1 bg-gray-700 rounded text-gray-300">
+        <div className="text-xs px-2 py-1 bg-gray-700 rounded text-gray-300 flex items-center">
           Popularity: {track.popularity}
+          <InfoTooltip text={trackPopularityText} />
         </div>
       </div>
     </div>
@@ -95,8 +102,9 @@ const TopItems = () => {
       </div>
       
       <div className="text-right">
-        <div className="text-xs px-2 py-1 bg-gray-700 rounded text-gray-300">
+        <div className="text-xs px-2 py-1 bg-gray-700 rounded text-gray-300 flex items-center">
           Popularity: {artist.popularity}
+          <InfoTooltip text={artistPopularityText} />
         </div>
       </div>
     </div>
