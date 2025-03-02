@@ -8,6 +8,11 @@ import json
 from models import User, db
 import spotipy
 from spotipy.oauth2 import SpotifyOAuth
+import logging
+
+# Set up logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 # Create Blueprint
 auth_bp = Blueprint('auth', __name__)
@@ -54,10 +59,12 @@ def callback():
     # Get the authorization code from the request
     code = request.args.get('code')
     if not code:
+        logger.error("Missing code in callback")
         return redirect(f"{frontend_url}?error=missing_code")
     
     try:
         # Exchange the code for tokens
+        logger.info(f"Exchanging code for tokens")
         token_info = sp_oauth.get_access_token(code)
         access_token = token_info['access_token']
         refresh_token = token_info['refresh_token']
@@ -66,19 +73,18 @@ def callback():
         sp = spotipy.Spotify(auth=access_token)
         spotify_user = sp.me()
         
-        # Check if user exists in our database
-        user = User.query.filter_by(spotify_id=spotify_user['id']).first()
+        # Log the FULL Spotify user object
+        logger.info(f"FULL SPOTIFY USER: {json.dumps(spotify_user)}")
         
-        if user:
-            # Update existing user
-            user.refresh_token = refresh_token
-            user.last_login = datetime.utcnow()
-            if spotify_user.get('email'):
-                user.email = spotify_user['email']
-            if spotify_user.get('display_name'):
-                user.display_name = spotify_user['display_name']
-        else:
-            # Create new user
+        # Add detailed logging
+        logger.info(f"Spotify user authenticated: ID={spotify_user['id']}, Email={spotify_user.get('email')}, Display Name={spotify_user.get('display_name')}")
+        
+        # Check if this is the first user
+        is_first_user = User.query.count() == 0
+        
+        if is_first_user:
+            # If this is the first user, create it normally
+            logger.info(f"Creating first user with Spotify ID={spotify_user['id']}")
             user = User(
                 spotify_id=spotify_user['id'],
                 email=spotify_user.get('email'),
@@ -86,17 +92,51 @@ def callback():
                 refresh_token=refresh_token
             )
             db.session.add(user)
+        else:
+            # Try to find user by exact spotify_id and email match
+            user = User.query.filter_by(
+                spotify_id=spotify_user['id'], 
+                email=spotify_user.get('email')
+            ).first()
+            
+            if user:
+                # This is the same user, update their info
+                logger.info(f"Existing user found: ID={user.id}, Spotify ID={user.spotify_id}, Email={user.email}")
+                user.refresh_token = refresh_token
+                user.last_login = datetime.utcnow()
+                if spotify_user.get('display_name'):
+                    user.display_name = spotify_user['display_name']
+            else:
+                # This might be a different user with the same Spotify ID
+                # Create a new user with a composite ID
+                composite_id = f"{spotify_user['id']}_{len(User.query.all()) + 1}"
+                logger.info(f"Creating new user with composite ID: {composite_id}")
+                user = User(
+                    spotify_id=composite_id,
+                    email=spotify_user.get('email'),
+                    display_name=spotify_user.get('display_name'),
+                    refresh_token=refresh_token
+                )
+                db.session.add(user)
         
-        db.session.commit()
+        # Commit changes to the database
+        try:
+            db.session.commit()
+            logger.info(f"Database commit successful: User ID={user.id}, Spotify ID={user.spotify_id}")
+        except Exception as e:
+            logger.error(f"Database commit error: {str(e)}")
+            db.session.rollback()
+            return redirect(f"{frontend_url}?error=database_error")
         
         # Create JWT token
         jwt_token = create_token(user.id)
+        logger.info(f"Created JWT token for user ID={user.id}")
         
         # Redirect to frontend with token
         return redirect(f"{frontend_url}/callback?token={jwt_token}")
         
     except Exception as e:
-        print(f"Error during Spotify authentication: {str(e)}")
+        logger.error(f"Error during authentication: {str(e)}")
         return redirect(f"{frontend_url}?error=authentication_failed")
 
 @auth_bp.route('/refresh-token', methods=['POST'])
@@ -196,3 +236,26 @@ def logout():
     # JWT invalidation happens on the client side by removing the token
     # This endpoint exists for consistency and potential future server-side cleanup
     return jsonify({'success': True, 'message': 'Logged out successfully'})
+
+@auth_bp.route('/debug/users')
+def debug_users():
+    """
+    Debug endpoint to list all users in the database
+    """
+    users = User.query.all()
+    user_list = []
+    
+    for user in users:
+        user_list.append({
+            'id': user.id,
+            'spotify_id': user.spotify_id,
+            'email': user.email,
+            'display_name': user.display_name,
+            'created_at': user.created_at.isoformat() if user.created_at else None,
+            'last_login': user.last_login.isoformat() if user.last_login else None
+        })
+    
+    return jsonify({
+        'count': len(user_list),
+        'users': user_list
+    })

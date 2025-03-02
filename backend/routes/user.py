@@ -4,6 +4,11 @@ from functools import wraps
 from models import User, db
 import spotipy
 from spotipy.oauth2 import SpotifyOAuth
+import logging
+
+# Set up logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 # Create Blueprint
 user_bp = Blueprint('user', __name__)
@@ -30,6 +35,9 @@ def token_required(f):
             user_id = payload['sub']
             current_user = User.query.get(user_id)
             
+            # Add debug logging
+            logger.info(f"User authenticated: ID={user_id}, Email={current_user.email if current_user else 'None'}")
+            
             if not current_user:
                 return jsonify({'error': 'User not found'}), 404
                 
@@ -43,6 +51,8 @@ def token_required(f):
 
 # Helper to get a Spotify client for a user
 def get_spotify_client(user):
+    logger.info(f"Creating Spotify client for user: ID={user.id}, Spotify ID={user.spotify_id}")
+    
     sp_oauth = SpotifyOAuth(
         client_id=current_app.config.get('SPOTIFY_CLIENT_ID'),
         client_secret=current_app.config.get('SPOTIFY_CLIENT_SECRET'),
@@ -72,6 +82,9 @@ def get_profile(current_user):
         sp = get_spotify_client(current_user)
         profile = sp.me()
         
+        # Add debug logging
+        logger.info(f"Profile fetched for user: ID={current_user.id}, Spotify ID={profile['id']}")
+        
         return jsonify({
             'id': profile['id'],
             'display_name': profile['display_name'],
@@ -81,6 +94,7 @@ def get_profile(current_user):
             'product': profile.get('product')
         })
     except Exception as e:
+        logger.error(f"Error fetching profile: {str(e)}")
         return jsonify({'error': str(e)}), 500
 
 @user_bp.route('/playlists')
@@ -93,9 +107,13 @@ def get_playlists(current_user):
         sp = get_spotify_client(current_user)
         playlists = sp.current_user_playlists()
         
+        # Add debug logging
+        logger.info(f"Playlists fetched for user: ID={current_user.id}, Count={playlists['total']}")
+        
         return jsonify({
             'items': playlists['items'],
             'total': playlists['total']
         })
     except Exception as e:
+        logger.error(f"Error fetching playlists: {str(e)}")
         return jsonify({'error': str(e)}), 500
