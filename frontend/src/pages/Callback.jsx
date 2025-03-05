@@ -11,12 +11,19 @@ const Callback = () => {
   useEffect(() => {
     const processCallback = () => {
       try {
-        // Get the token from the URL query parameters
+        // Get the parameters from the URL
         const params = new URLSearchParams(location.search);
         const token = params.get('token');
         const errorMessage = params.get('error');
+        const accessToken = params.get('access_token');
+        const expiresAt = params.get('expires_at');
 
         if (errorMessage) {
+          console.error('Error from authentication:', errorMessage);
+          const errorDetails = params.get('details');
+          if (errorDetails) {
+            console.error('Error details:', errorDetails);
+          }
           setError(errorMessage);
           setIsProcessing(false);
           return;
@@ -28,8 +35,21 @@ const Callback = () => {
           return;
         }
 
+        // Log the tokens for debugging (be careful with this in production)
+        console.log('Received JWT token from server');
+        
+        if (accessToken) {
+          console.log('Received Spotify access token from server');
+        }
+
         // Store the token and update authentication state
-        setToken(token);
+        // If we got an access token and expiry, also store those
+        if (accessToken && expiresAt) {
+          setToken(token, accessToken, expiresAt);
+        } else {
+          setToken(token);
+        }
+        
         setIsProcessing(false);
       } catch (error) {
         console.error('Error processing callback:', error);

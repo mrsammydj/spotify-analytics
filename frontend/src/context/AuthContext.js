@@ -9,6 +9,8 @@ export const AuthProvider = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [accessToken, setAccessToken] = useState(null);
+  const [accessTokenExpiry, setAccessTokenExpiry] = useState(null);
 
   // Check if user is authenticated on load
   useEffect(() => {
@@ -32,11 +34,25 @@ export const AuthProvider = ({ children }) => {
           setUser(profileResponse.data);
         } else {
           // Invalid token, remove it
+          console.log('Token invalid, logging out');
           localStorage.removeItem('spotifyToken');
+          localStorage.removeItem('spotifyAccessToken');
+          localStorage.removeItem('spotifyAccessTokenExpiry');
+          setIsAuthenticated(false);
+          setUser(null);
         }
       } catch (error) {
         console.error('Authentication error:', error);
-        localStorage.removeItem('spotifyToken');
+        
+        // Check if token is expired or invalid
+        if (error.response && (error.response.status === 401 || error.response.status === 403)) {
+          console.log('Token expired or invalid, logging out');
+          localStorage.removeItem('spotifyToken');
+          localStorage.removeItem('spotifyAccessToken');
+          localStorage.removeItem('spotifyAccessTokenExpiry');
+          setIsAuthenticated(false);
+          setUser(null);
+        }
       } finally {
         setLoading(false);
       }
@@ -63,15 +79,72 @@ export const AuthProvider = ({ children }) => {
       console.error('Logout error:', error);
     } finally {
       localStorage.removeItem('spotifyToken');
+      localStorage.removeItem('spotifyAccessToken');
+      localStorage.removeItem('spotifyAccessTokenExpiry');
       setIsAuthenticated(false);
       setUser(null);
+      setAccessToken(null);
+      setAccessTokenExpiry(null);
     }
   };
 
   // Set token after successful authentication
-  const setToken = (token) => {
+  const setToken = (token, initialAccessToken = null, expiresAt = null) => {
     localStorage.setItem('spotifyToken', token);
+    
+    // Store access token if provided
+    if (initialAccessToken) {
+      localStorage.setItem('spotifyAccessToken', initialAccessToken);
+      localStorage.setItem('spotifyAccessTokenExpiry', expiresAt.toString());
+      setAccessToken(initialAccessToken);
+      setAccessTokenExpiry(parseInt(expiresAt));
+    }
+    
     setIsAuthenticated(true);
+  };
+
+  // Get Spotify access token (with automatic refresh if needed)
+  const getSpotifyToken = async () => {
+    try {
+      // Check if we have a valid access token
+      const token = localStorage.getItem('spotifyAccessToken');
+      const expiry = localStorage.getItem('spotifyAccessTokenExpiry');
+      
+      if (token && expiry && parseInt(expiry) > Math.floor(Date.now() / 1000)) {
+        // Token is still valid
+        return token;
+      }
+      
+      // Token expired or not present, refresh it
+      const response = await api.post('/auth/refresh-token');
+      
+      // Update stored tokens
+      const newToken = response.data.access_token;
+      const expiresIn = response.data.expires_in;
+      const expiresAt = Math.floor(Date.now() / 1000) + expiresIn;
+      
+      localStorage.setItem('spotifyAccessToken', newToken);
+      localStorage.setItem('spotifyAccessTokenExpiry', expiresAt.toString());
+      
+      setAccessToken(newToken);
+      setAccessTokenExpiry(expiresAt);
+      
+      return newToken;
+    } catch (error) {
+      console.error('Error refreshing Spotify token:', error);
+      
+      // Check if token is revoked or invalid
+      if (error.response && error.response.status === 401 && 
+          error.response.data && error.response.data.error === 'refresh_token_revoked') {
+        // Need to re-authenticate
+        console.log('Refresh token revoked, logging out');
+        logout();
+        // Notify user (optional)
+        alert('Your session has expired. Please log in again.');
+      }
+      
+      throw error;
+    }
   };
 
   const value = {
@@ -80,7 +153,8 @@ export const AuthProvider = ({ children }) => {
     loading,
     login,
     logout,
-    setToken
+    setToken,
+    getSpotifyToken
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
