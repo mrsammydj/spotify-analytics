@@ -5,6 +5,57 @@ import api from '../services/api';
 import Navbar from '../components/Navbar';
 import InfoTooltip from '../components/InfoTooltip';
 
+// Debug Panel Component
+const DebugPanel = ({ user }) => {
+  // Get token from localStorage
+  const token = localStorage.getItem('spotifyToken');
+  
+  // Parse JWT token to show payload (without verification)
+  const parseJwt = (token) => {
+    try {
+      const base64Url = token.split('.')[1];
+      const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+      return JSON.parse(window.atob(base64));
+    } catch (e) {
+      return null;
+    }
+  };
+  
+  const tokenPayload = parseJwt(token);
+  
+  return (
+    <div className="mt-8 p-4 bg-gray-800 rounded-lg shadow-lg">
+      <h2 className="text-xl font-bold mb-2">Debug Information</h2>
+      <div className="space-y-2 text-sm">
+        <div>
+          <strong>Current User ID:</strong> {user?.id}
+        </div>
+        <div>
+          <strong>Display Name:</strong> {user?.display_name}
+        </div>
+        <div>
+          <strong>JWT User ID (sub):</strong> {tokenPayload?.sub}
+        </div>
+        <div>
+          <strong>JWT Expiration:</strong> {tokenPayload?.exp ? new Date(tokenPayload.exp * 1000).toLocaleString() : 'N/A'}
+        </div>
+        <div>
+          <strong>JWT Issued At:</strong> {tokenPayload?.iat ? new Date(tokenPayload.iat * 1000).toLocaleString() : 'N/A'}
+        </div>
+        <button 
+          onClick={() => {
+            localStorage.removeItem('spotifyToken');
+            window.location.href = '/';
+          }}
+          className="mt-2 px-3 py-1 bg-red-600 rounded text-white text-xs"
+        >
+          Clear Token & Logout
+        </button>
+      </div>
+    </div>
+  );
+};
+
 const Dashboard = () => {
   const { user } = useAuth();
   const [recentlyPlayed, setRecentlyPlayed] = useState([]);
@@ -205,6 +256,9 @@ const Dashboard = () => {
             </div>
           </div>
         </div>
+        
+        {/* Debug Panel - only visible in development */}
+        {process.env.NODE_ENV === 'development' && <DebugPanel user={user} />}
       </div>
     </div>
   );
