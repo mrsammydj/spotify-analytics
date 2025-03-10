@@ -9,9 +9,15 @@ def create_app(config_class=Config):
     app = Flask(__name__)
     app.config.from_object(config_class)
     
-    # Initialize CORS
+    # Update CORS configuration
     allowed_origins = os.environ.get('CORS_ALLOWED_ORIGINS', 'http://localhost:3000')
-    CORS(app, resources={r"/api/*": {"origins": allowed_origins.split(',')}, r"/debug/*": {"origins": allowed_origins.split(',')}})
+    CORS(app, resources={
+        r"/api/*": {"origins": allowed_origins.split(',')}, 
+        r"/debug/*": {"origins": allowed_origins.split(',')},
+        # Make sure to add all HTTP methods for preflight requests
+    }, supports_credentials=True)
+    
+    # Rest of your app configuration...
     
     # Initialize extensions
     db.init_app(app)

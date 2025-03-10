@@ -38,7 +38,7 @@ def get_spotify_oauth(cache_path=None):
         redirect_uri=current_app.config.get('SPOTIFY_REDIRECT_URI'),
         scope="user-read-recently-played user-top-read user-read-email user-read-private playlist-read-private",
         cache_path=cache_path,
-        show_dialog=True  # Force Spotify to show the auth dialog, important for testing multiple accounts
+        show_dialog=True
     )
 
 @auth_bp.route('/login')
@@ -56,7 +56,6 @@ def login():
     
     # Add cache path to auth URL so we can retrieve it in the callback
     auth_url = f"{auth_url}&cache_path={cache_path}"
-    
     return jsonify({'auth_url': auth_url})
 
 @auth_bp.route('/callback')

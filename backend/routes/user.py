@@ -58,29 +58,85 @@ def token_required(f):
 
 # Helper to get a Spotify client for a user
 def get_spotify_client(user):
+    """Get a Spotify client for a user with enhanced debugging"""
     try:
+        print(f"\n--- SPOTIFY CLIENT DEBUG ---")
+        print(f"Getting Spotify client for user ID: {user.id}, Spotify ID: {user.spotify_id}")
+        
+        # Check if refresh token exists
+        if not user.refresh_token:
+            print(f"ERROR: User has no refresh token!")
+            raise ValueError("User has no refresh token")
+            
+        print(f"User has refresh token (length: {len(user.refresh_token)})")
+        
+        # Create SpotifyOAuth instance
+        print(f"Creating SpotifyOAuth instance...")
+        client_id = current_app.config.get('SPOTIFY_CLIENT_ID')
+        client_secret = current_app.config.get('SPOTIFY_CLIENT_SECRET')
+        redirect_uri = current_app.config.get('SPOTIFY_REDIRECT_URI')
+        
+        if not client_id or not client_secret:
+            print(f"ERROR: Missing Spotify credentials in config!")
+            print(f"  client_id exists: {bool(client_id)}")
+            print(f"  client_secret exists: {bool(client_secret)}")
+            raise ValueError("Missing Spotify API credentials")
+            
         sp_oauth = SpotifyOAuth(
-            client_id=current_app.config.get('SPOTIFY_CLIENT_ID'),
-            client_secret=current_app.config.get('SPOTIFY_CLIENT_SECRET'),
-            redirect_uri=current_app.config.get('SPOTIFY_REDIRECT_URI'),
+            client_id=client_id,
+            client_secret=client_secret,
+            redirect_uri=redirect_uri,
             scope="user-read-recently-played user-top-read user-read-email user-read-private playlist-read-private"
         )
         
         # Get new access token using refresh token
-        token_info = sp_oauth.refresh_access_token(user.refresh_token)
-        access_token = token_info['access_token']
-        
-        # Update refresh token if provided
-        if 'refresh_token' in token_info:
-            user.refresh_token = token_info['refresh_token']
-            db.session.commit()
-            print(f"Refresh token updated for user: {user.spotify_id}")
+        print(f"Refreshing access token...")
+        try:
+            token_info = sp_oauth.refresh_access_token(user.refresh_token)
+            print(f"Access token successfully refreshed")
             
-        # Return Spotify client
-        return spotipy.Spotify(auth=access_token)
+            # Debug token contents (don't print actual tokens)
+            print(f"Received new token info with keys: {list(token_info.keys())}")
+            if 'expires_in' in token_info:
+                print(f"Token expires in: {token_info['expires_in']} seconds")
+                
+            access_token = token_info['access_token']
+            
+            # Update refresh token if provided
+            if 'refresh_token' in token_info:
+                print(f"Received new refresh token, updating in database")
+                user.refresh_token = token_info['refresh_token']
+                db.session.commit()
+            else:
+                print(f"No new refresh token provided")
+        except Exception as token_error:
+            print(f"ERROR refreshing access token: {str(token_error)}")
+            print(traceback.format_exc())
+            raise
+            
+        # Create and test Spotify client
+        print(f"Creating Spotify client with access token")
+        spotify_client = spotipy.Spotify(auth=access_token)
+        
+        # Test the client with a simple API call
+        try:
+            print(f"Testing Spotify client with me() API call")
+            user_info = spotify_client.me()
+            print(f"Client test successful - connected as: {user_info['id']}")
+            
+            # Verify we're connecting as the expected user
+            if user_info['id'] != user.spotify_id:
+                print(f"WARNING: Spotify client user ID ({user_info['id']}) doesn't match database user ID ({user.spotify_id})")
+        except Exception as api_error:
+            print(f"ERROR testing Spotify client: {str(api_error)}")
+            print(traceback.format_exc())
+            raise
+        
+        print(f"Spotify client successfully created and tested")
+        return spotify_client
     
     except Exception as e:
-        print(f"ERROR getting Spotify client: {str(e)}")
+        print(f"CRITICAL ERROR getting Spotify client: {str(e)}")
         print(traceback.format_exc())
         raise
 
