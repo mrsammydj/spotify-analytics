@@ -6,6 +6,7 @@ import Callback from './pages/Callback';
 import Dashboard from './pages/Dashboard';
 import RecentlyPlayed from './pages/RecentlyPlayed';
 import TopItems from './pages/TopItems';
+import Playlists from './pages/Playlists';
 import './App.css';
 
 // Protected route component
@@ -51,6 +52,15 @@ function App() {
               element={
                 <ProtectedRoute>
                   <TopItems />
+                </ProtectedRoute>
+              } 
+            />
+            {/* New playlists route */}
+            <Route 
+              path="/playlists" 
+              element={
+                <ProtectedRoute>
+                  <Playlists />
                 </ProtectedRoute>
               } 
             />

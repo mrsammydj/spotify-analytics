@@ -10,7 +10,8 @@ const Navbar = () => {
   const navItems = [
     { name: 'Dashboard', path: '/dashboard' },
     { name: 'Recently Played', path: '/recently-played' },
-    { name: 'Top Items', path: '/top-items' }
+    { name: 'Top Items', path: '/top-items' },
+    { name: 'Playlists', path: '/playlists' }
   ];
 
   const isActive = (path) => location.pathname === path;

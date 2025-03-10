@@ -257,6 +257,41 @@ const Dashboard = () => {
           </div>
         </div>
         
+        {/* New AI-Analysis Announcement */}
+        <div className="mt-8 bg-gradient-to-r from-blue-900 to-purple-900 rounded-lg shadow-lg p-6">
+          <div className="flex flex-col md:flex-row items-center justify-between">
+            <div className="mb-4 md:mb-0 md:mr-8">
+              <h2 className="text-2xl font-bold mb-2">NEW: AI-Powered Music Analysis</h2>
+              <p className="text-gray-300 mb-3">
+                Discover hidden patterns in your playlists with our machine learning algorithm!
+                See connections beyond traditional genres.
+              </p>
+              <Link 
+                to="/playlists"
+                className="inline-block px-6 py-3 bg-blue-600 hover:bg-blue-700 rounded-full font-medium transition-colors"
+              >
+                Try AI Analysis Now
+              </Link>
+            </div>
+            <div className="w-40 h-40 md:w-48 md:h-48 flex-shrink-0 flex items-center justify-center bg-blue-800 bg-opacity-50 rounded-full">
+              <svg 
+                xmlns="http://www.w3.org/2000/svg" 
+                viewBox="0 0 24 24" 
+                fill="none" 
+                stroke="currentColor" 
+                strokeWidth="1.5" 
+                strokeLinecap="round" 
+                strokeLinejoin="round"
+                className="w-24 h-24 text-blue-300"
+              >
+                <circle cx="12" cy="12" r="10" />
+                <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
+                <line x1="12" y1="17" x2="12.01" y2="17" />
+              </svg>
+            </div>
+          </div>
+        </div>
+        
         {/* Debug Panel - only visible in development */}
         {process.env.NODE_ENV === 'development' && <DebugPanel user={user} />}
       </div>
