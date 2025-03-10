@@ -4,56 +4,28 @@ import { useAuth } from '../context/AuthContext';
 import api from '../services/api';
 import Navbar from '../components/Navbar';
 import InfoTooltip from '../components/InfoTooltip';
+import { motion } from 'framer-motion';
+import { AnimatedCard, GlassCard } from '../components/UIComponents';
 
-// Debug Panel Component
-const DebugPanel = ({ user }) => {
-  // Get token from localStorage
-  const token = localStorage.getItem('spotifyToken');
-  
-  // Parse JWT token to show payload (without verification)
-  const parseJwt = (token) => {
-    try {
-      const base64Url = token.split('.')[1];
-      const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-      return JSON.parse(window.atob(base64));
-    } catch (e) {
-      return null;
+// Container animation variants
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      when: "beforeChildren",
+      staggerChildren: 0.1
     }
-  };
-  
-  const tokenPayload = parseJwt(token);
-  
-  return (
-    <div className="mt-8 p-4 bg-gray-800 rounded-lg shadow-lg">
-      <h2 className="text-xl font-bold mb-2">Debug Information</h2>
-      <div className="space-y-2 text-sm">
-        <div>
-          <strong>Current User ID:</strong> {user?.id}
-        </div>
-        <div>
-          <strong>Display Name:</strong> {user?.display_name}
-        </div>
-        <div>
-          <strong>JWT User ID (sub):</strong> {tokenPayload?.sub}
-        </div>
-        <div>
-          <strong>JWT Expiration:</strong> {tokenPayload?.exp ? new Date(tokenPayload.exp * 1000).toLocaleString() : 'N/A'}
-        </div>
-        <div>
-          <strong>JWT Issued At:</strong> {tokenPayload?.iat ? new Date(tokenPayload.iat * 1000).toLocaleString() : 'N/A'}
-        </div>
-        <button 
-          onClick={() => {
-            localStorage.removeItem('spotifyToken');
-            window.location.href = '/';
-          }}
-          className="mt-2 px-3 py-1 bg-red-600 rounded text-white text-xs"
-        >
-          Clear Token & Logout
-        </button>
-      </div>
-    </div>
-  );
+  }
+};
+
+// Item animation variants
+const itemVariants = {
+  hidden: { y: 20, opacity: 0 },
+  visible: {
+    y: 0,
+    opacity: 1
+  }
 };
 
 const Dashboard = () => {
@@ -63,11 +35,6 @@ const Dashboard = () => {
   const [topTracks, setTopTracks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-
-  // Popularity description text
-  const trackPopularityText = "Track popularity is a value between 0 and 100, with 100 being the most popular. The popularity is calculated based on the total number of recent plays and how recent those plays are. Newer plays count more than older ones.";
-  
-  const artistPopularityText = "Artist popularity is a value between 0 and 100, with 100 being the most popular. The popularity is calculated based on the popularity of the artist's tracks, their number of followers, and other metrics Spotify uses. Popularity values are updated periodically to reflect current trends.";
 
   useEffect(() => {
     const fetchDashboardData = async () => {
@@ -96,10 +63,20 @@ const Dashboard = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-900 text-white">
+      <div className="min-h-screen bg-spotify-gray-900 text-white">
         <Navbar />
         <div className="flex items-center justify-center h-screen">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-green-500"></div>
+          <motion.div
+            animate={{
+              rotate: 360
+            }}
+            transition={{
+              duration: 1,
+              repeat: Infinity,
+              ease: "linear"
+            }}
+            className="rounded-full h-16 w-16 border-t-4 border-l-4 border-spotify-green"
+          ></motion.div>
         </div>
       </div>
     );
@@ -107,194 +84,345 @@ const Dashboard = () => {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gray-900 text-white">
+      <div className="min-h-screen bg-spotify-gray-900 text-white">
         <Navbar />
         <div className="container mx-auto px-4 py-8">
-          <div className="bg-red-500 bg-opacity-20 p-4 rounded-md text-center">
-            <p>{error}</p>
-            <button 
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-red-500 bg-opacity-20 p-6 rounded-lg text-center"
+          >
+            <svg className="w-16 h-16 text-red-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <p className="text-xl mb-4">{error}</p>
+            <motion.button 
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
               onClick={() => window.location.reload()} 
-              className="mt-4 px-4 py-2 bg-red-500 rounded-md"
+              className="mt-4 px-6 py-2 bg-red-600 hover:bg-red-700 rounded-full transition-colors"
             >
               Retry
-            </button>
-          </div>
+            </motion.button>
+          </motion.div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-900 text-white">
+    <div className="min-h-screen bg-gradient-to-b from-spotify-gray-900 to-spotify-dark text-white">
       <Navbar />
       
-      <div className="container mx-auto px-4 py-8">
+      <motion.div 
+        variants={containerVariants}
+        initial="hidden"
+        animate="visible"
+        className="container mx-auto px-4 py-8"
+      >
         {/* Welcome Section */}
-        <div className="mb-10 text-center">
-          <h1 className="text-3xl font-bold mb-2">
-            Welcome to Your Spotify Analytics Dashboard
-            {user && user.display_name && `, ${user.display_name}`}
-          </h1>
-          <p className="text-gray-400">
-            Explore your listening habits and discover insights about your musical taste
-          </p>
-        </div>
+        <motion.div 
+          variants={itemVariants}
+          className="mb-10 text-center"
+        >
+          <GlassCard className="p-8 max-w-3xl mx-auto">
+            <motion.h1 
+              className="text-4xl font-bold mb-3 text-transparent bg-clip-text bg-gradient-to-r from-spotify-green to-blue-400"
+              animate={{ 
+                backgroundPosition: ["0% center", "100% center"],
+              }}
+              transition={{
+                duration: 3,
+                repeat: Infinity,
+                repeatType: "reverse"
+              }}
+              style={{
+                backgroundSize: "200%"
+              }}
+            >
+              Welcome to Your Analytics
+              {user && user.display_name && `, ${user.display_name}`}
+            </motion.h1>
+            <p className="text-gray-300 text-lg">
+              Explore your listening habits and discover insights about your musical taste
+            </p>
+          </GlassCard>
+        </motion.div>
         
         {/* Dashboard Sections */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {/* Recently Played Section */}
-          <div className="bg-gray-800 p-6 rounded-lg shadow-lg">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-bold">Recently Played</h2>
-              <Link to="/recently-played" className="text-green-500 hover:text-green-400 text-sm">
-                View All
-              </Link>
-            </div>
-            
-            <div className="space-y-4">
-              {recentlyPlayed.length > 0 ? (
-                recentlyPlayed.map((item, index) => (
-                  <div key={index} className="flex items-center">
-                    <div className="w-12 h-12 flex-shrink-0">
-                      <img 
-                        src={item.image_url || 'https://via.placeholder.com/40'} 
-                        alt={item.name} 
-                        className="w-full h-full object-cover rounded"
-                      />
-                    </div>
-                    <div className="ml-3 overflow-hidden">
-                      <p className="truncate font-medium">{item.name}</p>
-                      <p className="text-sm text-gray-400 truncate">{item.artist}</p>
-                    </div>
-                  </div>
-                ))
-              ) : (
-                <p className="text-gray-500">No recently played tracks found</p>
-              )}
-            </div>
-          </div>
+          <motion.div variants={itemVariants}>
+            <AnimatedCard className="h-full p-6">
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-xl font-bold flex items-center">
+                  <svg className="w-5 h-5 mr-2 text-spotify-green" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  Recently Played
+                </h2>
+                <Link to="/recently-played">
+                  <motion.span 
+                    whileHover={{ x: 3 }} 
+                    className="text-spotify-green hover:text-spotify-light text-sm flex items-center"
+                  >
+                    View All
+                    <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
+                  </motion.span>
+                </Link>
+              </div>
+              
+              <div className="space-y-4">
+                {recentlyPlayed.length > 0 ? (
+                  recentlyPlayed.map((item, index) => (
+                    <motion.div 
+                      key={index} 
+                      initial={{ opacity: 0, x: -10 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: index * 0.1 }}
+                      whileHover={{ 
+                        x: 5, 
+                        backgroundColor: "rgba(255,255,255,0.05)",
+                        transition: { duration: 0.2 }
+                      }}
+                      className="flex items-center p-2 rounded-lg"
+                    >
+                      <div className="w-12 h-12 flex-shrink-0 overflow-hidden rounded-md">
+                        <motion.img 
+                          whileHover={{ scale: 1.1 }}
+                          src={item.image_url || 'https://via.placeholder.com/40'} 
+                          alt={item.name} 
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                      <div className="ml-3 overflow-hidden">
+                        <p className="truncate font-medium">{item.name}</p>
+                        <p className="text-sm text-gray-400 truncate">{item.artist}</p>
+                      </div>
+                    </motion.div>
+                  ))
+                ) : (
+                  <p className="text-gray-500">No recently played tracks found</p>
+                )}
+              </div>
+            </AnimatedCard>
+          </motion.div>
           
           {/* Top Artists Section */}
-          <div className="bg-gray-800 p-6 rounded-lg shadow-lg">
-            <div className="flex justify-between items-center mb-4">
-              <div className="flex items-center">
-                <h2 className="text-xl font-bold">Top Artists</h2>
+          <motion.div variants={itemVariants}>
+            <AnimatedCard className="h-full p-6" delay={0.1}>
+              <div className="flex justify-between items-center mb-4">
+                <div className="flex items-center">
+                  <h2 className="text-xl font-bold flex items-center">
+                    <svg className="w-5 h-5 mr-2 text-spotify-green" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                    </svg>
+                    Top Artists
+                  </h2>
+                </div>
+                <Link to="/top-items">
+                  <motion.span 
+                    whileHover={{ x: 3 }} 
+                    className="text-spotify-green hover:text-spotify-light text-sm flex items-center"
+                  >
+                    View All
+                    <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
+                  </motion.span>
+                </Link>
               </div>
-              <Link to="/top-items" className="text-green-500 hover:text-green-400 text-sm">
-                View All
-              </Link>
-            </div>
-            
-            <div className="space-y-4">
-              {topArtists.length > 0 ? (
-                topArtists.map((artist, index) => (
-                  <div key={index} className="flex items-center">
-                    <div className="w-12 h-12 flex-shrink-0">
-                      <img 
-                        src={artist.images && artist.images.length > 0 ? artist.images[2].url : 'https://via.placeholder.com/40'} 
-                        alt={artist.name} 
-                        className="w-full h-full object-cover rounded-full"
-                      />
-                    </div>
-                    <div className="ml-3 flex-grow overflow-hidden">
-                      <p className="font-medium truncate">{artist.name}</p>
-                      <p className="text-sm text-gray-400 truncate">
-                        {artist.genres && artist.genres.length > 0 
-                          ? artist.genres.slice(0, 2).join(', ') 
-                          : 'No genres available'}
-                      </p>
-                    </div>
-                    <div className="ml-2 text-xs px-2 py-1 bg-gray-700 rounded text-gray-300 flex items-center whitespace-nowrap">
-                      {artist.popularity}
-                      <InfoTooltip text={artistPopularityText} />
-                    </div>
-                  </div>
-                ))
-              ) : (
-                <p className="text-gray-500">No top artists found</p>
-              )}
-            </div>
-          </div>
+              
+              <div className="space-y-4">
+                {topArtists.length > 0 ? (
+                  topArtists.map((artist, index) => (
+                    <motion.div 
+                      key={index} 
+                      initial={{ opacity: 0, x: -10 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: index * 0.1 }}
+                      whileHover={{ 
+                        x: 5, 
+                        backgroundColor: "rgba(255,255,255,0.05)",
+                        transition: { duration: 0.2 }
+                      }}
+                      className="flex items-center p-2 rounded-lg"
+                    >
+                      <div className="w-12 h-12 flex-shrink-0 overflow-hidden rounded-full">
+                        <motion.img 
+                          whileHover={{ scale: 1.1 }}
+                          src={artist.images && artist.images.length > 0 ? artist.images[2].url : 'https://via.placeholder.com/40'} 
+                          alt={artist.name} 
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                      <div className="ml-3 flex-grow overflow-hidden">
+                        <p className="font-medium truncate">{artist.name}</p>
+                        <p className="text-sm text-gray-400 truncate">
+                          {artist.genres && artist.genres.length > 0 
+                            ? artist.genres.slice(0, 2).join(', ') 
+                            : 'No genres available'}
+                        </p>
+                      </div>
+                      <div className="ml-2 text-xs px-2 py-1 bg-spotify-gray-700 rounded-full text-gray-300 flex items-center whitespace-nowrap">
+                        {artist.popularity}
+                        <InfoTooltip text="Artist popularity on Spotify (0-100)" />
+                      </div>
+                    </motion.div>
+                  ))
+                ) : (
+                  <p className="text-gray-500">No top artists found</p>
+                )}
+              </div>
+            </AnimatedCard>
+          </motion.div>
           
           {/* Top Tracks Section */}
-          <div className="bg-gray-800 p-6 rounded-lg shadow-lg">
-            <div className="flex justify-between items-center mb-4">
-              <div className="flex items-center">
-                <h2 className="text-xl font-bold">Top Tracks</h2>
+          <motion.div variants={itemVariants}>
+            <AnimatedCard className="h-full p-6" delay={0.2}>
+              <div className="flex justify-between items-center mb-4">
+                <div className="flex items-center">
+                  <h2 className="text-xl font-bold flex items-center">
+                    <svg className="w-5 h-5 mr-2 text-spotify-green" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
+                    </svg>
+                    Top Tracks
+                  </h2>
+                </div>
+                <Link to="/top-items">
+                  <motion.span 
+                    whileHover={{ x: 3 }} 
+                    className="text-spotify-green hover:text-spotify-light text-sm flex items-center"
+                  >
+                    View All
+                    <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
+                  </motion.span>
+                </Link>
               </div>
-              <Link to="/top-items" className="text-green-500 hover:text-green-400 text-sm">
-                View All
-              </Link>
-            </div>
-            
-            <div className="space-y-4">
-              {topTracks.length > 0 ? (
-                topTracks.map((track, index) => (
-                  <div key={index} className="flex items-center">
-                    <div className="w-12 h-12 flex-shrink-0">
-                      <img 
-                        src={track.album && track.album.images.length > 0 ? track.album.images[2].url : 'https://via.placeholder.com/40'} 
-                        alt={track.name} 
-                        className="w-full h-full object-cover rounded"
-                      />
-                    </div>
-                    <div className="ml-3 flex-grow overflow-hidden">
-                      <p className="truncate font-medium">{track.name}</p>
-                      <p className="text-sm text-gray-400 truncate">
-                        {track.artists.map(artist => artist.name).join(', ')}
-                      </p>
-                    </div>
-                    <div className="ml-2 text-xs px-2 py-1 bg-gray-700 rounded text-gray-300 flex items-center whitespace-nowrap">
-                      {track.popularity}
-                      <InfoTooltip text={trackPopularityText} />
-                    </div>
-                  </div>
-                ))
-              ) : (
-                <p className="text-gray-500">No top tracks found</p>
-              )}
-            </div>
-          </div>
+              
+              <div className="space-y-4">
+                {topTracks.length > 0 ? (
+                  topTracks.map((track, index) => (
+                    <motion.div 
+                      key={index} 
+                      initial={{ opacity: 0, x: -10 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: index * 0.1 }}
+                      whileHover={{ 
+                        x: 5, 
+                        backgroundColor: "rgba(255,255,255,0.05)",
+                        transition: { duration: 0.2 }
+                      }}
+                      className="flex items-center p-2 rounded-lg"
+                    >
+                      <div className="w-12 h-12 flex-shrink-0 overflow-hidden rounded-md">
+                        <motion.img 
+                          whileHover={{ scale: 1.1 }}
+                          src={track.album && track.album.images.length > 0 ? track.album.images[2].url : 'https://via.placeholder.com/40'} 
+                          alt={track.name} 
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                      <div className="ml-3 flex-grow overflow-hidden">
+                        <p className="truncate font-medium">{track.name}</p>
+                        <p className="text-sm text-gray-400 truncate">
+                          {track.artists.map(artist => artist.name).join(', ')}
+                        </p>
+                      </div>
+                      <div className="ml-2 text-xs px-2 py-1 bg-spotify-gray-700 rounded-full text-gray-300 flex items-center whitespace-nowrap">
+                        {track.popularity}
+                        <InfoTooltip text="Track popularity on Spotify (0-100)" />
+                      </div>
+                    </motion.div>
+                  ))
+                ) : (
+                  <p className="text-gray-500">No top tracks found</p>
+                )}
+              </div>
+            </AnimatedCard>
+          </motion.div>
         </div>
         
         {/* New AI-Analysis Announcement */}
-        <div className="mt-8 bg-gradient-to-r from-blue-900 to-purple-900 rounded-lg shadow-lg p-6">
-          <div className="flex flex-col md:flex-row items-center justify-between">
-            <div className="mb-4 md:mb-0 md:mr-8">
-              <h2 className="text-2xl font-bold mb-2">NEW: AI-Powered Music Analysis</h2>
-              <p className="text-gray-300 mb-3">
-                Discover hidden patterns in your playlists with our machine learning algorithm!
-                See connections beyond traditional genres.
-              </p>
-              <Link 
-                to="/playlists"
-                className="inline-block px-6 py-3 bg-blue-600 hover:bg-blue-700 rounded-full font-medium transition-colors"
+        <motion.div 
+          variants={itemVariants}
+          className="mt-10"
+        >
+          <GlassCard className="p-6 relative overflow-hidden">
+            <motion.div 
+              className="absolute top-0 left-0 w-full h-full bg-gradient-to-r from-purple-600/20 to-blue-500/20 -z-10"
+              animate={{
+                backgroundPosition: ["0% center", "100% center"],
+              }}
+              transition={{
+                duration: 10,
+                repeat: Infinity,
+                repeatType: "reverse"
+              }}
+              style={{
+                backgroundSize: "200%"
+              }}
+            />
+            <div className="flex flex-col md:flex-row items-center justify-between">
+              <div className="mb-6 md:mb-0 md:mr-8">
+                <h2 className="text-2xl md:text-3xl font-bold mb-2 text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-blue-400">
+                  AI-Powered Music Analysis
+                </h2>
+                <p className="text-gray-300 mb-4">
+                  Discover hidden patterns in your playlists with our machine learning algorithm!
+                  See connections beyond traditional genres.
+                </p>
+                <motion.div
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  <Link 
+                    to="/playlists"
+                    className="inline-block px-6 py-3 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 rounded-full font-medium transition-all shadow-lg hover:shadow-xl"
+                  >
+                    Try AI Analysis Now
+                  </Link>
+                </motion.div>
+              </div>
+              <motion.div 
+                className="w-32 h-32 md:w-40 md:h-40 flex-shrink-0 flex items-center justify-center bg-purple-900/30 rounded-full relative"
+                animate={{ rotate: 360 }}
+                transition={{ duration: 60, repeat: Infinity, ease: "linear" }}
               >
-                Try AI Analysis Now
-              </Link>
+                <motion.div 
+                  className="absolute inset-0 rounded-full"
+                  style={{ 
+                    background: "conic-gradient(from 0deg, rgba(139, 92, 246, 0.8), rgba(59, 130, 246, 0.8), rgba(139, 92, 246, 0))"
+                  }}
+                />
+                <motion.div 
+                  className="absolute inset-2 rounded-full bg-spotify-gray-900 flex items-center justify-center"
+                  initial={{ scale: 0.8 }}
+                  animate={{ scale: [0.8, 0.85, 0.8] }}
+                  transition={{ duration: 2, repeat: Infinity }}
+                >
+                  <svg 
+                    xmlns="http://www.w3.org/2000/svg" 
+                    viewBox="0 0 24 24" 
+                    fill="none" 
+                    stroke="currentColor" 
+                    strokeWidth="1.5" 
+                    strokeLinecap="round" 
+                    strokeLinejoin="round"
+                    className="w-16 h-16 text-blue-300"
+                  >
+                    <path d="M9.663 17h4.673M12 3v1m0 16v1m-8-9h1m15 0h1m-2.607-6.394l-.707.707m-12.02 12.021l-.707.707m2.05-16.05l.707.707m12.02 12.02l.707.707M6 12a6 6 0 1 1 12 0 6 6 0 0 1-12 0z" />
+                  </svg>
+                </motion.div>
+              </motion.div>
             </div>
-            <div className="w-40 h-40 md:w-48 md:h-48 flex-shrink-0 flex items-center justify-center bg-blue-800 bg-opacity-50 rounded-full">
-              <svg 
-                xmlns="http://www.w3.org/2000/svg" 
-                viewBox="0 0 24 24" 
-                fill="none" 
-                stroke="currentColor" 
-                strokeWidth="1.5" 
-                strokeLinecap="round" 
-                strokeLinejoin="round"
-                className="w-24 h-24 text-blue-300"
-              >
-                <circle cx="12" cy="12" r="10" />
-                <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
-                <line x1="12" y1="17" x2="12.01" y2="17" />
-              </svg>
-            </div>
-          </div>
-        </div>
-        
-        {/* Debug Panel - only visible in development */}
-        {process.env.NODE_ENV === 'development' && <DebugPanel user={user} />}
-      </div>
+          </GlassCard>
+        </motion.div>
+      </motion.div>
     </div>
   );
 };

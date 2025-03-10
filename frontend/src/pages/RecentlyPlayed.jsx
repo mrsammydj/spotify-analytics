@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
+import { motion } from 'framer-motion';
 import Navbar from '../components/Navbar';
 import api from '../services/api';
+import { DataStateHandler } from '../components/loading';
 
 const RecentlyPlayed = () => {
   const [tracks, setTracks] = useState([]);
@@ -13,6 +15,7 @@ const RecentlyPlayed = () => {
       try {
         const response = await api.get('/stats/recently-played');
         setTracks(response.data.items);
+        setError(null);
       } catch (error) {
         console.error('Error fetching recently played tracks:', error);
         setError('Failed to load your recently played tracks. Please try again later.');
@@ -30,56 +33,68 @@ const RecentlyPlayed = () => {
     return date.toLocaleString();
   };
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-900 text-white">
-        <Navbar />
-        <div className="flex items-center justify-center h-screen">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-green-500"></div>
-        </div>
-      </div>
-    );
-  }
+  // Animation variants
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.05
+      }
+    }
+  };
 
-  if (error) {
-    return (
-      <div className="min-h-screen bg-gray-900 text-white">
-        <Navbar />
-        <div className="container mx-auto px-4 py-8">
-          <div className="bg-red-500 bg-opacity-20 p-4 rounded-md text-center">
-            <p>{error}</p>
-            <button 
-              onClick={() => window.location.reload()} 
-              className="mt-4 px-4 py-2 bg-red-500 rounded-md"
-            >
-              Retry
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
+  const itemVariants = {
+    hidden: { y: 20, opacity: 0 },
+    visible: { y: 0, opacity: 1 }
+  };
 
   return (
-    <div className="min-h-screen bg-gray-900 text-white">
+    <div className="min-h-screen bg-gradient-to-b from-spotify-gray-900 to-spotify-dark text-white">
       <Navbar />
       
-      <div className="container mx-auto px-4 py-8">
-        <h1 className="text-3xl font-bold mb-6">Recently Played Tracks</h1>
+      <motion.div 
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        className="container mx-auto px-4 py-8"
+      >
+        <motion.h1 
+          initial={{ y: -20, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          className="text-3xl font-bold mb-6"
+        >
+          Recently Played Tracks
+        </motion.h1>
         
-        {tracks.length === 0 ? (
-          <div className="bg-gray-800 p-6 rounded-lg shadow-lg text-center">
-            <p>No recently played tracks found.</p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 gap-4">
+        <DataStateHandler
+          isLoading={loading}
+          error={error}
+          isEmpty={tracks.length === 0}
+          emptyMessage="No recently played tracks found."
+        >
+          <motion.div 
+            variants={containerVariants}
+            initial="hidden"
+            animate="visible"
+            className="grid grid-cols-1 gap-4"
+          >
             {tracks.map((track, index) => (
-              <div key={index} className="bg-gray-800 p-4 rounded-lg shadow flex items-center">
-                <div className="w-16 h-16 flex-shrink-0">
-                  <img 
+              <motion.div 
+                key={index} 
+                variants={itemVariants}
+                whileHover={{ 
+                  x: 5,
+                  backgroundColor: 'rgba(255,255,255,0.05)',
+                  boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)'
+                }}
+                className="bg-spotify-gray-800 p-4 rounded-lg shadow hover:shadow-lg transition-all flex items-center"
+              >
+                <div className="w-16 h-16 flex-shrink-0 overflow-hidden rounded">
+                  <motion.img 
                     src={track.image_url || 'https://via.placeholder.com/64'} 
                     alt={track.name} 
-                    className="w-full h-full object-cover rounded"
+                    className="w-full h-full object-cover"
+                    whileHover={{ scale: 1.1 }}
                   />
                 </div>
                 
@@ -93,11 +108,11 @@ const RecentlyPlayed = () => {
                   <p>Played at:</p>
                   <p>{formatDate(track.played_at)}</p>
                 </div>
-              </div>
+              </motion.div>
             ))}
-          </div>
-        )}
-      </div>
+          </motion.div>
+        </DataStateHandler>
+      </motion.div>
     </div>
   );
 };

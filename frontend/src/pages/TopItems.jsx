@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
+import { motion } from 'framer-motion';
 import Navbar from '../components/Navbar';
 import InfoTooltip from '../components/InfoTooltip';
 import api from '../services/api';
+import { DataStateHandler } from '../components/loading';
 
 const TopItems = () => {
   const [activeTab, setActiveTab] = useState('tracks');
@@ -31,6 +33,8 @@ const TopItems = () => {
           const artistsResponse = await api.get(`/stats/top-artists?time_range=${timeRange}`);
           setTopArtists(artistsResponse.data.items);
         }
+        
+        setError(null);
       } catch (error) {
         console.error('Error fetching top items:', error);
         setError('Failed to load your top items. Please try again later.');
@@ -42,23 +46,40 @@ const TopItems = () => {
     fetchTopItems();
   }, [activeTab, timeRange]);
 
-  // Popularity description text
-  const trackPopularityText = "Track popularity is a value between 0 and 100, with 100 being the most popular. The popularity is calculated based on the total number of recent plays and how recent those plays are. Newer plays count more than older ones.";
-  
-  const artistPopularityText = "Artist popularity is a value between 0 and 100, with 100 being the most popular. The popularity is calculated based on the popularity of the artist's tracks, their number of followers, and other metrics Spotify uses. Popularity values are updated periodically to reflect current trends.";
+  // Animation variants
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.1
+      }
+    }
+  };
+
+  const itemVariants = {
+    hidden: { y: 20, opacity: 0 },
+    visible: { y: 0, opacity: 1 }
+  };
 
   // Render track item
   const renderTrack = (track, index) => (
-    <div key={track.id} className="bg-gray-800 p-4 rounded-lg shadow flex items-center">
+    <motion.div 
+      key={track.id}
+      variants={itemVariants}
+      className="bg-spotify-gray-800 p-4 rounded-lg shadow hover:shadow-lg transition-shadow flex items-center"
+      whileHover={{ x: 5, backgroundColor: 'rgba(255,255,255,0.05)' }}
+    >
       <div className="text-center mr-4 w-8">
         <span className="text-2xl font-bold text-gray-500">{index + 1}</span>
       </div>
       
-      <div className="w-16 h-16 flex-shrink-0">
-        <img 
+      <div className="w-16 h-16 flex-shrink-0 overflow-hidden rounded">
+        <motion.img 
           src={track.album && track.album.images.length > 0 ? track.album.images[0].url : 'https://via.placeholder.com/64'} 
           alt={track.name} 
-          className="w-full h-full object-cover rounded"
+          className="w-full h-full object-cover"
+          whileHover={{ scale: 1.1 }}
         />
       </div>
       
@@ -69,26 +90,32 @@ const TopItems = () => {
       </div>
       
       <div className="text-right">
-        <div className="text-xs px-2 py-1 bg-gray-700 rounded text-gray-300 flex items-center">
+        <div className="text-xs px-2 py-1 bg-spotify-gray-700 rounded text-gray-300 flex items-center">
           Popularity: {track.popularity}
-          <InfoTooltip text={trackPopularityText} />
+          <InfoTooltip text="Track popularity is a value between 0 and 100, with 100 being the most popular. The popularity is calculated based on the total number of recent plays and how recent those plays are. Newer plays count more than older ones." />
         </div>
       </div>
-    </div>
+    </motion.div>
   );
 
   // Render artist item
   const renderArtist = (artist, index) => (
-    <div key={artist.id} className="bg-gray-800 p-4 rounded-lg shadow flex items-center">
+    <motion.div 
+      key={artist.id}
+      variants={itemVariants}
+      className="bg-spotify-gray-800 p-4 rounded-lg shadow hover:shadow-lg transition-shadow flex items-center"
+      whileHover={{ x: 5, backgroundColor: 'rgba(255,255,255,0.05)' }}
+    >
       <div className="text-center mr-4 w-8">
         <span className="text-2xl font-bold text-gray-500">{index + 1}</span>
       </div>
       
-      <div className="w-16 h-16 flex-shrink-0">
-        <img 
+      <div className="w-16 h-16 flex-shrink-0 overflow-hidden rounded-full">
+        <motion.img 
           src={artist.images && artist.images.length > 0 ? artist.images[0].url : 'https://via.placeholder.com/64'} 
           alt={artist.name} 
-          className="w-full h-full object-cover rounded-full"
+          className="w-full h-full object-cover"
+          whileHover={{ scale: 1.1 }}
         />
       </div>
       
@@ -102,122 +129,123 @@ const TopItems = () => {
       </div>
       
       <div className="text-right">
-        <div className="text-xs px-2 py-1 bg-gray-700 rounded text-gray-300 flex items-center">
+        <div className="text-xs px-2 py-1 bg-spotify-gray-700 rounded text-gray-300 flex items-center">
           Popularity: {artist.popularity}
-          <InfoTooltip text={artistPopularityText} />
+          <InfoTooltip text="Artist popularity is a value between 0 and 100, with 100 being the most popular. The popularity is calculated based on the popularity of the artist's tracks, their number of followers, and other metrics Spotify uses. Popularity values are updated periodically to reflect current trends." />
         </div>
       </div>
-    </div>
+    </motion.div>
   );
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-900 text-white">
-        <Navbar />
-        <div className="flex items-center justify-center h-screen">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-green-500"></div>
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="min-h-screen bg-gray-900 text-white">
-        <Navbar />
-        <div className="container mx-auto px-4 py-8">
-          <div className="bg-red-500 bg-opacity-20 p-4 rounded-md text-center">
-            <p>{error}</p>
-            <button 
-              onClick={() => window.location.reload()} 
-              className="mt-4 px-4 py-2 bg-red-500 rounded-md"
-            >
-              Retry
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="min-h-screen bg-gray-900 text-white">
+    <div className="min-h-screen bg-gradient-to-b from-spotify-gray-900 to-spotify-dark text-white">
       <Navbar />
       
-      <div className="container mx-auto px-4 py-8">
-        <h1 className="text-3xl font-bold mb-6">Your Top Items</h1>
+      <motion.div 
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        className="container mx-auto px-4 py-8"
+      >
+        <motion.h1 
+          initial={{ y: -20, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          className="text-3xl font-bold mb-6"
+        >
+          Your Top Items
+        </motion.h1>
         
         {/* Tab navigation */}
-        <div className="mb-6">
-          <div className="flex space-x-1 bg-gray-800 p-1 rounded-lg shadow-lg">
+        <motion.div 
+          initial={{ y: 20, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ delay: 0.1 }}
+          className="mb-6"
+        >
+          <div className="flex space-x-1 bg-spotify-gray-800 p-1 rounded-lg shadow-lg">
             <button
               onClick={() => setActiveTab('tracks')}
-              className={`flex-1 py-2 px-4 rounded-md ${
-                activeTab === 'tracks' ? 'bg-green-600' : 'hover:bg-gray-700'
+              className={`flex-1 py-2 px-4 rounded-md transition-colors ${
+                activeTab === 'tracks' 
+                  ? 'bg-spotify-green text-white' 
+                  : 'text-gray-300 hover:bg-gray-700'
               }`}
             >
               Top Tracks
             </button>
             <button
               onClick={() => setActiveTab('artists')}
-              className={`flex-1 py-2 px-4 rounded-md ${
-                activeTab === 'artists' ? 'bg-green-600' : 'hover:bg-gray-700'
+              className={`flex-1 py-2 px-4 rounded-md transition-colors ${
+                activeTab === 'artists' 
+                  ? 'bg-spotify-green text-white' 
+                  : 'text-gray-300 hover:bg-gray-700'
               }`}
             >
               Top Artists
             </button>
           </div>
-        </div>
+        </motion.div>
         
         {/* Time range selector */}
-        <div className="mb-6">
-          <div className="bg-gray-800 p-4 rounded-lg shadow-lg">
+        <motion.div 
+          initial={{ y: 20, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ delay: 0.2 }}
+          className="mb-6"
+        >
+          <div className="bg-spotify-gray-800 p-4 rounded-lg shadow-lg">
             <h2 className="text-lg font-medium mb-2">Time Range</h2>
             <div className="flex flex-wrap gap-2">
               {timeRangeOptions.map(option => (
-                <button
+                <motion.button
                   key={option.value}
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
                   onClick={() => setTimeRange(option.value)}
-                  className={`py-1 px-3 rounded-full text-sm ${
+                  className={`py-1 px-3 rounded-full text-sm transition-colors ${
                     timeRange === option.value 
-                      ? 'bg-green-600 text-white' 
-                      : 'bg-gray-700 hover:bg-gray-600'
+                      ? 'bg-spotify-green text-white' 
+                      : 'bg-spotify-gray-700 hover:bg-spotify-gray-600'
                   }`}
                 >
                   {option.label}
-                </button>
+                </motion.button>
               ))}
             </div>
           </div>
-        </div>
+        </motion.div>
         
         {/* Content based on active tab */}
-        {activeTab === 'tracks' && (
-          <div className="space-y-4">
-            <h2 className="text-2xl font-bold mb-4">Your Top Tracks</h2>
-            {topTracks.length === 0 ? (
-              <div className="bg-gray-800 p-6 rounded-lg shadow-lg text-center">
-                <p>No top tracks found for this time period.</p>
-              </div>
-            ) : (
-              topTracks.map(renderTrack)
-            )}
-          </div>
-        )}
-        
-        {activeTab === 'artists' && (
-          <div className="space-y-4">
-            <h2 className="text-2xl font-bold mb-4">Your Top Artists</h2>
-            {topArtists.length === 0 ? (
-              <div className="bg-gray-800 p-6 rounded-lg shadow-lg text-center">
-                <p>No top artists found for this time period.</p>
-              </div>
-            ) : (
-              topArtists.map(renderArtist)
-            )}
-          </div>
-        )}
-      </div>
+        <DataStateHandler 
+          isLoading={loading}
+          error={error}
+          isEmpty={activeTab === 'tracks' ? topTracks.length === 0 : topArtists.length === 0}
+          emptyMessage={activeTab === 'tracks' ? "No top tracks found for this time period." : "No top artists found for this time period."}
+        >
+          {activeTab === 'tracks' && (
+            <motion.div 
+              variants={containerVariants}
+              initial="hidden"
+              animate="visible"
+              className="space-y-4"
+            >
+              <h2 className="text-2xl font-bold mb-4">Your Top Tracks</h2>
+              {topTracks.map(renderTrack)}
+            </motion.div>
+          )}
+          
+          {activeTab === 'artists' && (
+            <motion.div 
+              variants={containerVariants}
+              initial="hidden"
+              animate="visible"
+              className="space-y-4"
+            >
+              <h2 className="text-2xl font-bold mb-4">Your Top Artists</h2>
+              {topArtists.map(renderArtist)}
+            </motion.div>
+          )}
+        </DataStateHandler>
+      </motion.div>
     </div>
   );
 };
