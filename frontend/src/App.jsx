@@ -8,6 +8,7 @@ import RecentlyPlayed from './pages/RecentlyPlayed';
 import TopItems from './pages/TopItems';
 import Playlists from './pages/Playlists';
 import './App.css';
+import './components/charts/ChartRegistration';
 
 // Protected route component
 const ProtectedRoute = ({ children }) => {
