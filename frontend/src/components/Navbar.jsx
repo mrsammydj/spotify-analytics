@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { motion } from 'framer-motion';
+import musilyzelogo from '../assets/musilyze.png';
 
 const Navbar = () => {
   const { user, logout } = useAuth();
@@ -34,10 +35,12 @@ const Navbar = () => {
               whileHover={{ scale: 1.05 }} 
               className="flex items-center"
             >
-              <svg className="w-8 h-8 text-spotify-green mr-2" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1.17-10.17L13 11l-2.17 2.17L13 15.34l-1.41 1.42-3.59-3.59 3.59-3.59 1.41 1.41zM15.91 15.5L13.74 13.33l3.59-3.58 1.41 1.41-2.17 2.17 2.17 2.17-1.41 1.42-3.58-3.59 1.41-1.41 1.16 1.17 1.16-1.17-2.31-2.33 2.31-2.33-1.16-1.17-2.33 2.32 2.33 2.33-1.16 1.17-1.16-1.16z"/>
-              </svg>
-              <span className="text-spotify-green">Spotify Analytics</span>
+              <img 
+                src={musilyzelogo} 
+                alt="Musilyze Logo" 
+                className="h-8 mr-2" 
+              />
+              <span className="white">Musilyze</span>
             </motion.div>
           </Link>
           

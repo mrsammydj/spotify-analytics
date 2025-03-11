@@ -27,7 +27,7 @@ const Login = () => {
           transition={{ delay: 0.2, duration: 0.5 }}
           className="text-3xl font-bold mb-6"
         >
-          Spotify Analytics Dashboard
+          Musilyze
         </motion.h1>
         
         <motion.p 
@@ -54,7 +54,7 @@ const Login = () => {
               e.target.src = 'https://via.placeholder.com/150?text=Spotify';
             }}
           />
-          <div className="text-spotify-green text-4xl font-bold mt-4">Spotify Analytics</div>
+          <div className="text-spotify-green text-4xl font-bold mt-4">Musilyze for Spotify</div>
         </motion.div>
         
         <motion.button
