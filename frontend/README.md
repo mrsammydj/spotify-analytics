@@ -37,39 +37,6 @@ frontend/
 └── tailwind.config.js    # Tailwind CSS configuration
 ```
 
-## Environment Variables
-
-Create a `.env` file in the frontend directory with the following variables:
-
-```
-REACT_APP_API_URL=http://localhost:5000/api
-```
-
-## Setup and Installation
-
-1. **Install dependencies**:
-   ```bash
-   npm install
-   ```
-
-2. **Set up environment variables**:
-   Create a `.env` file as described above.
-
-## Running the Development Server
-
-```bash
-npm start
-```
-
-The development server will start at http://localhost:3000 by default.
-
-## Building for Production
-
-```bash
-npm run build
-```
-
-This will create a `build` directory with optimized production files.
 
 ## Key Components
 
@@ -182,15 +149,6 @@ This application uses React's built-in state management with hooks:
 - `useEffect` for side effects like API calls
 - `useContext` for sharing authentication state
 
-## Deployment
-
-### Vercel Deployment
-
-1. Sign up for [Vercel](https://vercel.com/)
-2. Connect your GitHub repository
-3. Create a new project from the repository
-4. Add environment variables in the Vercel dashboard
-5. The application will be automatically deployed
 
 ### Environment Variables for Production
 
