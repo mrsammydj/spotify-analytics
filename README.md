@@ -25,54 +25,14 @@ A full-stack web application that leverages Spotify's API to provide in-depth an
 - **Chart.js**: JavaScript charting library
 - **Axios**: Promise-based HTTP client
 
-## Project Structure
-
-```
-spotify-analytics/
-├── backend/             # Flask API
-│   ├── routes/          # API endpoints
-│   │   ├── auth.py      # Authentication routes
-│   │   ├── stats.py     # Analytics routes
-│   │   └── user.py      # User data routes
-│   ├── services/        # Business logic
-│   ├── cache/           # Analysis cache storage
-│   └── ...
-├── frontend/            # React application
-│   ├── src/
-│   │   ├── components/  # Reusable UI components
-│   │   │   ├── InfoTooltip.jsx
-│   │   │   ├── AdvancedPlaylistAnalysis.jsx
-│   │   │   └── ...
-│   │   ├── pages/       # Page components
-│   │   │   ├── Dashboard.jsx
-│   │   │   ├── Playlists.jsx
-│   │   │   └── ...
-│   │   └── ...
-│   └── ...
-└── ...
-```
 
 ## Getting Started
 
-See the README files in the [backend](./backend/README.md) and [frontend](./frontend/README.md) directories for detailed setup instructions.
+See the README files in the [backend](./backend/README.md) and [frontend](./frontend/README.md) directories for more details.
+
 
 ### Quick Start
 
-1. Clone the repository
-2. Set up the backend:
-   ```
-   cd backend
-   python -m venv venv
-   venv\Scripts\activate  # Windows
-   pip install -r requirements.txt
-   ```
-3. Set up the frontend:
-   ```
-   cd frontend
-   npm install
-   ```
-4. Create `.env` files in both directories (see templates)
-5. Start the development servers
 
 ## API Usage Notes
 
