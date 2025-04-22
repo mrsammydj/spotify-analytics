@@ -61,6 +61,24 @@ See the [Deployment Guide](./backend/README.md#deployment) for detailed instruct
 5. Open a Pull Request
 
 
+## Spotify API Limitations
+
+As of early 2025, Spotify has restricted access to certain API endpoints for new developer applications:
+
+**Restricted Endpoints**:
+   - Audio Features
+   - Audio Analysis
+   - Recommendations
+   - Related Artists
+   - 30-second preview URLs
+
+**Adaptation Strategy**:
+   - Using alternative data sources such as artist metadata, genres, and release dates
+   - Implementing ML clustering on available data
+   - Creating approximated audio profiles based on playlist context
+   - Providing graceful fallbacks when data is limited
+
+
 ## Acknowledgments
 
 - [Spotify Web API](https://developer.spotify.com/documentation/web-api/) for providing the data
