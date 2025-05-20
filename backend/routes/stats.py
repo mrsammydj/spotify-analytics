@@ -13,6 +13,8 @@ import numpy as np
 from sklearn.cluster import KMeans
 import os
 from collections import Counter
+from enhanced_clustering import EnhancedPlaylistAnalysis
+from advanced_clustering import AdvancedPlaylistAnalysis
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
@@ -73,7 +75,18 @@ def get_recently_played(current_user):
         tracks_data = []
         for item in recently_played['items']:
             track = item['track']
-            played_at = datetime.strptime(item['played_at'], '%Y-%m-%dT%H:%M:%S.%fZ')
+            try:
+                # Try parsing with microseconds
+                played_at = datetime.strptime(item['played_at'], '%Y-%m-%dT%H:%M:%S.%fZ')
+            except ValueError:
+                try:
+                    # Try parsing without microseconds
+                    played_at = datetime.strptime(item['played_at'], '%Y-%m-%dT%H:%M:%SZ')
+                except ValueError:
+                    # Log the error and use current time as fallback
+                    logger.error(f"Could not parse timestamp: {item['played_at']}")
+                    played_at = datetime.utcnow()
+            
             
             # Check if track exists in database
             db_track = Track.query.filter_by(spotify_id=track['id']).first()
@@ -723,7 +736,8 @@ def get_simple_playlist_analysis(current_user, playlist_id, return_tracks=False)
 @token_required
 def get_advanced_playlist_analysis(current_user, playlist_id):
     """
-    Master endpoint that aggregates multiple analysis types using a hybrid approach
+    Master endpoint that aggregates multiple analysis types using a hybrid approach.
+    Now includes enhanced ML clustering.
     """
     try:
         print(f"\n\n==================== HYBRID ANALYSIS START ====================")
@@ -735,7 +749,17 @@ def get_advanced_playlist_analysis(current_user, playlist_id):
             print(f"Using cached hybrid analysis for playlist: {playlist_id}")
             return jsonify(cached_results)
         
-        # Get simple analysis as base layer
+        # Try ML analysis first (new enhancement)
+        try:
+            ml_analysis = get_ml_playlist_analysis(current_user, playlist_id).json
+            # If we got ML results, use them as primary results
+            print("Successfully obtained ML analysis results")
+            ml_success = True
+        except Exception as e:
+            print(f"ML analysis failed, will use simple analysis: {str(e)}")
+            ml_success = False
+            
+        # Get simple analysis as base layer or fallback
         try:
             base_analysis, tracks = get_simple_playlist_analysis(current_user, playlist_id, return_tracks=True)
         except Exception as e:
@@ -745,6 +769,10 @@ def get_advanced_playlist_analysis(current_user, playlist_id):
         
         # Initialize specialized insights
         specialized_insights = {}
+        
+        # If ML analysis worked, add it to specialized insights
+        if ml_success:
+            specialized_insights['ml_clusters'] = ml_analysis
         
         # Run specialized clustering modules (handle failures gracefully)
         try:
@@ -782,7 +810,8 @@ def get_advanced_playlist_analysis(current_user, playlist_id):
             "base_analysis": base_analysis,
             "specialized_insights": specialized_insights,
             "playlist_id": playlist_id,
-            "timestamp": datetime.now().isoformat()
+            "timestamp": datetime.now().isoformat(),
+            "enhanced_ml": ml_success  # Flag to indicate if enhanced ML was used
         }
         
         # Cache the results
@@ -1550,3 +1579,194 @@ def generate_audio_profile(tracks, style="default", playlist_name="", playlist_d
                 profile[key] = max(0, min(1, profile[key]))
     
     return profile
+
+
+@stats_bp.route('/ml-playlist-analysis/<playlist_id>')
+@token_required
+def get_ml_playlist_analysis(current_user, playlist_id):
+    """
+    Advanced machine learning analysis of a playlist using our guaranteed balanced clustering approach
+    """
+    print("FORCING NEW ANALYSIS - BYPASSING CACHE")
+    cached_results = None  # Force skip cache check
+    try:
+        print(f"\n\n==================== ML ANALYSIS START ====================")
+        print(f"Starting ML analysis for playlist: {playlist_id}")
+        
+        # Check for cached results first
+        # cached_results = get_cached_analysis(playlist_id, "ml")
+        if cached_results:
+            print(f"Using cached ML analysis for playlist: {playlist_id}")
+            return jsonify(cached_results)
+        
+        # Get Spotify client
+        sp = get_spotify_client(current_user)
+        
+        # Get playlist details
+        try:
+            playlist_details = sp.playlist(playlist_id)
+            playlist_name = playlist_details['name']
+            playlist_description = playlist_details.get('description', '')
+            print(f"Analyzing playlist: {playlist_name}")
+        except Exception as e:
+            print(f"Error getting playlist details: {str(e)}")
+            playlist_name = "Unknown Playlist"
+            playlist_description = ""
+        
+        # Get tracks
+        try:
+            playlist_tracks = get_playlist_tracks_internal(current_user, playlist_id)
+            print(f"Retrieved {len(playlist_tracks)} tracks from playlist {playlist_id}")
+            
+            # Check if we have enough tracks
+            if len(playlist_tracks) < 5:
+                return jsonify({
+                    'error': 'Not enough tracks for ML analysis',
+                    'message': 'ML analysis requires at least 5 tracks for meaningful results'
+                }), 400
+                
+        except Exception as e:
+            print(f"Error getting playlist tracks: {str(e)}")
+            return jsonify({'error': f'Failed to retrieve playlist tracks: {str(e)}'}), 500
+            
+        # Initialize the ML analyzer with our updated methods
+        analyzer = EnhancedPlaylistAnalysis(
+            playlist_id=playlist_id,
+            tracks=playlist_tracks,
+            playlist_name=playlist_name,
+            playlist_description=playlist_description
+        )
+        
+        # Perform the analysis using our guaranteed balanced approach
+        try:
+            analysis_result = analyzer.analyze_playlist(sp, max_clusters=6)
+            print(f"ML analysis successful with {len(analysis_result.get('clusters', []))} clusters")
+            
+            # Verify cluster balance before returning
+            clusters = analysis_result.get('clusters', [])
+            if clusters:
+                total_tracks = analysis_result.get('total_tracks', 0)
+                largest_cluster = max(clusters, key=lambda c: c.get('count', 0))
+                largest_ratio = largest_cluster.get('count', 0) / total_tracks if total_tracks > 0 else 0
+                
+                print(f"Largest cluster ratio: {largest_ratio:.2f}")
+                
+                # If still severely imbalanced (despite our measures), add warning
+                if largest_ratio > 0.6:
+                    print(f"WARNING: Clustering still imbalanced: {largest_ratio:.2f}")
+                    analysis_result['balance_warning'] = True
+            
+            # Cache the results
+            try:
+                save_cached_analysis(playlist_id, analysis_result, "ml")
+                print(f"Cached ML analysis for playlist: {playlist_id}")
+            except Exception as cache_error:
+                print(f"Warning: Failed to cache results: {str(cache_error)}")
+                
+            print(f"==================== ML ANALYSIS COMPLETE ====================\n\n")
+            return jsonify(analysis_result)
+            
+        except Exception as e:
+            import traceback
+            print(f"Error performing ML analysis: {str(e)}")
+            print(traceback.format_exc())
+            return jsonify({'error': f'ML analysis failed: {str(e)}'}), 500
+            
+    except Exception as e:
+        import traceback
+        print(f"Critical error in ML analysis: {str(e)}")
+        print(traceback.format_exc())
+        return jsonify({'error': str(e)}), 500
+    
+
+
+@stats_bp.route('/hdbscan-playlist-analysis/<playlist_id>')
+@token_required
+def get_hdbscan_playlist_analysis(current_user, playlist_id):
+    """
+    Enhanced endpoint that uses HDBSCAN and UMAP for more accurate playlist clustering.
+    """
+    try:
+        print(f"\n\n==================== ADVANCED ANALYSIS START ====================")
+        print(f"Starting advanced HDBSCAN+UMAP analysis for playlist: {playlist_id}")
+        
+        # Check for cached results first
+        cached_results = get_cached_analysis(playlist_id, "advanced")
+        if cached_results:
+            print(f"Using cached advanced analysis for playlist: {playlist_id}")
+            return jsonify(cached_results)
+        
+        # Get Spotify client
+        sp = get_spotify_client(current_user)
+        
+        # Get playlist details
+        try:
+            playlist_details = sp.playlist(playlist_id)
+            playlist_name = playlist_details['name']
+            playlist_description = playlist_details.get('description', '')
+            print(f"Analyzing playlist: {playlist_name}")
+        except Exception as e:
+            print(f"Error getting playlist details: {str(e)}")
+            playlist_name = "Unknown Playlist"
+            playlist_description = ""
+        
+        # Get tracks
+        try:
+            playlist_tracks = get_playlist_tracks_internal(current_user, playlist_id)
+            print(f"Retrieved {len(playlist_tracks)} tracks from playlist {playlist_id}")
+            
+            # Check if we have enough tracks
+            if len(playlist_tracks) < 5:
+                return jsonify({
+                    'error': 'Not enough tracks for advanced analysis',
+                    'message': 'Advanced analysis requires at least 5 tracks for meaningful results'
+                }), 400
+                
+        except Exception as e:
+            print(f"Error getting playlist tracks: {str(e)}")
+            return jsonify({'error': f'Failed to retrieve playlist tracks: {str(e)}'}), 500
+            
+        # Initialize the advanced analyzer
+        analyzer = AdvancedPlaylistAnalysis(
+            playlist_id=playlist_id,
+            tracks=playlist_tracks,
+            playlist_name=playlist_name,
+            playlist_description=playlist_description
+        )
+        
+        # Perform the analysis
+        try:
+            analysis_result = analyzer.analyze_playlist(sp)
+            print(f"Advanced analysis successful with {len(analysis_result.get('clusters', []))} clusters")
+            
+            # Cache the results
+            try:
+                save_cached_analysis(playlist_id, analysis_result, "advanced")
+                print(f"Cached advanced analysis for playlist: {playlist_id}")
+            except Exception as cache_error:
+                print(f"Warning: Failed to cache results: {str(cache_error)}")
+                
+            print(f"==================== ADVANCED ANALYSIS COMPLETE ====================\n\n")
+            return jsonify(analysis_result)
+            
+        except Exception as e:
+            import traceback
+            print(f"Error performing advanced analysis: {str(e)}")
+            print(traceback.format_exc())
+            
+            # Fall back to simple analysis if advanced fails
+            print("Falling back to simple analysis")
+            try:
+                simple_result, _ = get_simple_playlist_analysis(current_user, playlist_id, return_tracks=True)
+                simple_result["fallback"] = True
+                simple_result["error_details"] = str(e)
+                return jsonify(simple_result)
+            except Exception as simple_error:
+                print(f"Simple analysis fallback also failed: {str(simple_error)}")
+                return jsonify({'error': f'Analysis failed: {str(e)}'}), 500
+            
+    except Exception as e:
+        import traceback
+        print(f"Critical error in advanced analysis: {str(e)}")
+        print(traceback.format_exc())
+        return jsonify({'error': str(e)}), 500
