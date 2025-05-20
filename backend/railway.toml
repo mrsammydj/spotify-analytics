@@ -1,0 +1,17 @@
+[build]
+builder = "nixpacks"
+buildCommand = "pip install -r requirements.txt"
+
+[deploy]
+startCommand = "gunicorn wsgi:app --bind 0.0.0.0:$PORT"
+healthcheckPath = "/api/auth/verify-token"
+healthcheckTimeout = 300
+
+[variables]
+NIXPACKS_PYTHON_VERSION = "3.11"
+PORT = "8080"
+
+[nixpacks]
+python_version = "3.11"
+install_phase = "pip install -r requirements.txt"
+start_phase = "gunicorn wsgi:app --bind 0.0.0.0:$PORT"
