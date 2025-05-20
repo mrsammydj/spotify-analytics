@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import Navbar from '../components/Navbar';
 import PlaylistGenreChart from '../components/PlaylistGenreChart';
 import AdvancedPlaylistAnalysis from '../components/AdvancedPlaylistAnalysis';
+import MLPlaylistInsights from '../components/MLPlaylistInsights'; // Import the new ML component
 import api from '../services/api';
 import { DataStateHandler } from '../components/loading';
 
@@ -13,6 +14,7 @@ const Playlists = () => {
   const [loading, setLoading] = useState(true);
   const [tracksLoading, setTracksLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [activeAnalysisTab, setActiveAnalysisTab] = useState('ml'); // Default to ML analysis tab
 
   // Fetch user's playlists
   useEffect(() => {
@@ -206,28 +208,82 @@ const Playlists = () => {
                       </div>
                     </motion.div>
                     
-                    {/* Genre Distribution Chart */}
+                    {/* Analysis Tabs */}
                     <motion.div
                       initial={{ y: 20, opacity: 0 }}
                       animate={{ y: 0, opacity: 1 }}
                       transition={{ delay: 0.1 }}
+                      className="bg-spotify-gray-800 p-6 rounded-lg shadow-lg"
                     >
-                      {selectedPlaylist && (
-                        <PlaylistGenreChart playlistId={selectedPlaylist.id} />
-                      )}
-                    </motion.div>
-                    
-                    {/* AI-Powered Analysis */}
-                    <motion.div 
-                      initial={{ y: 20, opacity: 0 }}
-                      animate={{ y: 0, opacity: 1 }}
-                      transition={{ delay: 0.2 }}
-                      className="mt-6"
-                    >
-                      <h3 className="text-xl font-bold mb-4">AI-Powered Music Analysis</h3>
-                      {selectedPlaylist && (
-                        <AdvancedPlaylistAnalysis playlistId={selectedPlaylist.id} />
-                      )}
+                      {/* Tab Navigation */}
+                      <div className="mb-6">
+                        <div className="flex space-x-1 bg-spotify-gray-900 p-1 rounded">
+                          <button
+                            onClick={() => setActiveAnalysisTab('ml')}
+                            className={`flex-1 py-2 px-4 rounded ${
+                              activeAnalysisTab === 'ml' ? 'bg-purple-600' : 'hover:bg-gray-700'
+                            }`}
+                          >
+                            ML Insights
+                            <span className="ml-2 px-1.5 py-0.5 bg-purple-800 text-xs rounded">New</span>
+                          </button>
+                          <button
+                            onClick={() => setActiveAnalysisTab('hybrid')}
+                            className={`flex-1 py-2 px-4 rounded ${
+                              activeAnalysisTab === 'hybrid' ? 'bg-spotify-green' : 'hover:bg-gray-700'
+                            }`}
+                          >
+                            Hybrid Analysis
+                          </button>
+                          <button
+                            onClick={() => setActiveAnalysisTab('genres')}
+                            className={`flex-1 py-2 px-4 rounded ${
+                              activeAnalysisTab === 'genres' ? 'bg-spotify-green' : 'hover:bg-gray-700'
+                            }`}
+                          >
+                            Genres
+                          </button>
+                        </div>
+                      </div>
+                      
+                      {/* Analysis Content based on active tab */}
+                      <AnimatePresence mode="wait">
+                        {activeAnalysisTab === 'ml' && (
+                          <motion.div
+                            key="ml-analysis"
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -10 }}
+                          >
+                            {/* Enhanced ML Analysis */}
+                            <MLPlaylistInsights playlistId={selectedPlaylist.id} />
+                          </motion.div>
+                        )}
+                        
+                        {activeAnalysisTab === 'hybrid' && (
+                          <motion.div
+                            key="hybrid-analysis"
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -10 }}
+                          >
+                            {/* Original Hybrid Analysis */}
+                            <AdvancedPlaylistAnalysis playlistId={selectedPlaylist.id} />
+                          </motion.div>
+                        )}
+                        
+                        {activeAnalysisTab === 'genres' && (
+                          <motion.div
+                            key="genres-analysis"
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -10 }}
+                          >
+                            {/* Genre Distribution Chart */}
+                            <PlaylistGenreChart playlistId={selectedPlaylist.id} />
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
                     </motion.div>
 
                     {/* Tracks Preview */}

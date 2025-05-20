@@ -23,12 +23,14 @@ var/
 # Flask
 instance/
 .webassets-cache
+cache/
 
 # Environments
 .env
 .venv
 env/
 venv/
+venv_old/
 ENV/
 env.bak/
 venv.bak/
@@ -50,3 +52,5 @@ venv.bak/
 # System Files
 .DS_Store
 Thumbs.db
+
+installation_checker.py
