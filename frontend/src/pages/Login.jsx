@@ -3,13 +3,12 @@ import { useAuth } from '../context/AuthContext';
 import spotifyLogo from '../assets/Spotify_Primary_Logo_RGB_Green.png';
 import { motion } from 'framer-motion';
 
-// Mock images for feature previews
-const FEATURE_IMAGES = {
-  dashboard: '/api/placeholder/500/300',
-  recentlyPlayed: '/api/placeholder/500/300',
-  topItems: '/api/placeholder/500/300',
-  playlistAnalysis: '/api/placeholder/500/300'
-};
+// Import your feature images
+import mainImage from '../assets/Musilyze Main image.png';
+import dashboardImage from '../assets/Musilyze Dashboard Preview.png';
+import recentlyPlayedImage from '../assets/Musilyze Recently Played.png';
+import topItemsImage from '../assets/Musilyze Top Items.png';
+import playlistAnalysisImage from '../assets/Musilyze AI Playlist.png';
 
 // Animation variants
 const containerVariants = {
@@ -42,7 +41,8 @@ const Login = () => {
     {
       title: "Personalized Dashboard",
       description: "Get a snapshot of your listening habits with recently played tracks, top artists, and favorite genres all in one place.",
-      image: FEATURE_IMAGES.dashboard,
+      image: dashboardImage,
+      aspectRatio: "wide", // 2472 × 1084 - wide aspect ratio
       icon: (
         <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
@@ -52,7 +52,8 @@ const Login = () => {
     {
       title: "Listening History Timeline",
       description: "Explore your recently played tracks with timestamps and visualize your daily listening patterns.",
-      image: FEATURE_IMAGES.recentlyPlayed,
+      image: recentlyPlayedImage,
+      aspectRatio: "ultrawide", // 2434 × 850 - very wide
       icon: (
         <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -62,7 +63,8 @@ const Login = () => {
     {
       title: "Top Artists & Tracks Analysis",
       description: "Discover which artists and tracks you've been listening to most across different time periods.",
-      image: FEATURE_IMAGES.topItems,
+      image: topItemsImage,
+      aspectRatio: "ultrawide", // 2422 × 854 - very wide
       icon: (
         <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
@@ -72,7 +74,8 @@ const Login = () => {
     {
       title: "AI-Powered Playlist Insights",
       description: "Uncover hidden patterns in your playlists with our machine learning algorithm that groups similar tracks and visualizes audio characteristics.",
-      image: FEATURE_IMAGES.playlistAnalysis,
+      image: playlistAnalysisImage,
+      aspectRatio: "square", // 1516 × 1502 - nearly square
       icon: (
         <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2" />
@@ -80,6 +83,20 @@ const Login = () => {
       )
     }
   ];
+
+  // Function to get image container class based on aspect ratio
+  const getImageContainerClass = (aspectRatio) => {
+    switch (aspectRatio) {
+      case "wide":
+        return "h-56"; // Taller for wide images
+      case "ultrawide":
+        return "h-64"; // Even taller for ultrawide images
+      case "square":
+        return "h-80"; // Taller for square images
+      default:
+        return "h-48";
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-spotify-gray-900 to-spotify-dark text-white">
@@ -166,15 +183,14 @@ const Login = () => {
               </motion.button>
             </motion.div>
             
-            {/* Right side hero image/graphic */}
+            {/* Right side hero image - Custom dimensions for mainImage (1574x1546 - nearly square) */}
             <motion.div 
               className="lg:w-1/2 relative"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: 0.2 }}
             >
-              <div className="relative w-full h-64 md:h-96 bg-spotify-gray-800 rounded-xl overflow-hidden">
-                {/* This would be a hero image or graphic representation of the app */}
+              <div className="relative w-full h-80 md:h-96 lg:h-[500px] bg-spotify-gray-800 rounded-xl overflow-hidden">
                 <motion.div 
                   className="absolute inset-0 bg-gradient-to-br from-spotify-green/30 to-blue-500/30"
                   animate={{
@@ -187,11 +203,15 @@ const Login = () => {
                   transition={{ duration: 5, repeat: Infinity }}
                 />
                 
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <img 
-                    src="/api/placeholder/550/350" 
-                    alt="Dashboard Preview" 
-                    className="rounded-lg shadow-xl max-w-full max-h-full object-cover" 
+                <div className="absolute inset-0 flex items-center justify-center p-4">
+                  <motion.img 
+                    src={mainImage}
+                    alt="Musilyze Dashboard Preview" 
+                    className="rounded-lg shadow-xl max-w-full max-h-full object-contain"
+                    initial={{ scale: 0.9, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    transition={{ duration: 0.7, delay: 0.4 }}
+                    whileHover={{ scale: 1.02 }}
                   />
                 </div>
               </div>
@@ -223,13 +243,15 @@ const Login = () => {
                 variants={itemVariants}
                 whileHover={{ y: -5 }}
               >
-                <div className="h-48 relative overflow-hidden">
-                  <img 
+                <div className={`relative overflow-hidden ${getImageContainerClass(feature.aspectRatio)}`}>
+                  <motion.img 
                     src={feature.image} 
                     alt={feature.title} 
-                    className="w-full h-full object-cover" 
+                    className="w-full h-full object-contain bg-spotify-gray-900"
+                    whileHover={{ scale: 1.05 }}
+                    transition={{ duration: 0.3 }}
                   />
-                  <div className="absolute inset-0 bg-gradient-to-t from-spotify-gray-900 to-transparent"></div>
+                  <div className="absolute inset-0 bg-gradient-to-t from-spotify-gray-900/80 to-transparent"></div>
                 </div>
                 <div className="p-6">
                   <div className="flex items-center mb-3">
