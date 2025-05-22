@@ -9,10 +9,9 @@ from sklearn.mixture import GaussianMixture
 import umap
 import hdbscan
 import logging
-from collections import Counter, defaultdict
+from collections import Counter
 import re
 import pandas as pd
-from scipy import stats
 from datetime import datetime
 import traceback
 
@@ -1288,7 +1287,7 @@ class AdvancedPlaylistAnalysis:
         
         return result
     
-    def create_descriptive_cluster_name(self, cluster_idx, tracks, genre_distribution):
+    def _create_descriptive_cluster_name(self, cluster_idx, tracks, genre_distribution):
         """
         Generate meaningful names for clusters using a hierarchical approach that prioritizes:
         1. Genre distinctions
